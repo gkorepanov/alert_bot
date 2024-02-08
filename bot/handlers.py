@@ -24,11 +24,13 @@ def register_handlers(application: Application, user_filter: filters.BaseFilter)
     chat_filter = filters.ChatType.GROUPS | filters.ChatType.CHANNEL
     application.add_handler(CommandHandler("start", start_handler, filters=user_filter & filters.ChatType.PRIVATE))
     application.add_handler(CommandHandler("set_phone_number", set_phone_number_handler, filters=user_filter & filters.ChatType.PRIVATE))
-    application.add_handler(CommandHandler("alert_me", alert_me_handler, filters=user_filter & chat_filter))
-    application.add_handler(CommandHandler("add_alert", add_alert_handler, filters=user_filter & chat_filter))
-    application.add_handler(CommandHandler("remove_alerts", remove_alerts_handler, filters=user_filter & chat_filter))
-    application.add_handler(CommandHandler("mute", mute_handler, filters=user_filter & chat_filter))
-    application.add_handler(CommandHandler("unmute", unmute_handler, filters=user_filter & chat_filter))
+
+    application.add_handler(MessageHandler(filters=chat_filter & filters.Regex("^/alert_me"), callback=alert_me_handler))
+    application.add_handler(MessageHandler(filters=chat_filter & filters.Regex("^/add_alert"), callback=add_alert_handler))
+    application.add_handler(MessageHandler(filters=chat_filter & filters.Regex("^/remove_alerts"), callback=remove_alerts_handler))
+    application.add_handler(MessageHandler(filters=chat_filter & filters.Regex("^/mute"), callback=mute_handler))
+    application.add_handler(MessageHandler(filters=chat_filter & filters.Regex("^/unmute"), callback=unmute_handler))
+
     application.add_handler(MessageHandler(filters=chat_filter, callback=message_handler))
     application.add_handler(ChatMemberHandler(added_to_chat_handler))
 
@@ -172,7 +174,10 @@ async def alert_me_handler(update: Update, context: CallbackContext) -> None:
 async def add_alert_handler(update: Update, context: CallbackContext) -> None:
     chat = update.effective_chat
     db_chat: DBChat = await DBChat.get(chat.id)
-    if not context.args:
+
+    args = update.effective_message.text.split(' ')[1:]
+
+    if not args:
         await update.message.reply_text(
             text="You have not provided a regex.",
         )
