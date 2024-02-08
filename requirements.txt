@@ -1,0 +1,10 @@
+python-telegram-bot[job-queue, rate-limiter]==20.7
+PyYAML~=6.0.1
+beanie~=1.24.0
+motor~=3.3.2
+pymongo~=4.6.1
+pydantic~=2.5.3
+pydantic-settings~=2.1.0
+funcy==2.0
+more-itertools~=10.2.0
+tenacity~=8.2.3

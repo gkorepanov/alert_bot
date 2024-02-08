@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  mongo:
+    image: mongo:7.0.5  # fix version to avoid compatibility issues and enforce caching
+    restart: always
+    expose:
+      - "27017"  # available to other containers
+    ports:
+      - "27017:27017"
+    volumes:
+      - ${MONGODB_PATH}:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+
+  bot:
+    command: python3 run.py
+    restart: always
+    build:
+      context: "./"
+    env_file:
+      - .env
+    depends_on:
+      mongo:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048m"  # avoid disk thrashing
