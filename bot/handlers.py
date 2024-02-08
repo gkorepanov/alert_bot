@@ -49,8 +49,8 @@ async def message_handler(update: Update, context: CallbackContext) -> None:
         return
 
     for regex in db_chat.alerts:
-        if re.search(regex, update.message.text):
-            await update.message.reply_text(
+        if re.search(regex, update.effective_message.text):
+            await update.effective_message.reply_text(
                 text=f"Alert triggered by regex {regex}",
             )
             for user_id in db_chat.alert_users:
@@ -60,7 +60,7 @@ async def message_handler(update: Update, context: CallbackContext) -> None:
                         bot=context.bot,
                         db_user=db_user,
                         db_chat=db_chat,
-                        text=update.message.text,
+                        text=update.effective_message.text,
                     )
                 except Exception as e:
                     logger.exception(f"Error while alerting user {user_id}: {e}")
