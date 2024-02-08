@@ -178,7 +178,7 @@ async def add_alert_handler(update: Update, context: CallbackContext) -> None:
     args = update.effective_message.text.split(' ')[1:]
 
     if not args:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             text="You have not provided a regex.",
         )
         return
@@ -186,7 +186,7 @@ async def add_alert_handler(update: Update, context: CallbackContext) -> None:
     regex = ' '.join(args)
     db_chat.alerts.add(regex)
     await db_chat.save()
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         text=f"Alert `{regex}` added.",
         parse_mode=ParseMode.MARKDOWN,
     )
@@ -197,7 +197,7 @@ async def remove_alerts_handler(update: Update, context: CallbackContext) -> Non
     db_chat: DBChat = await DBChat.get(chat.id)
     db_chat.alerts.clear()
     await db_chat.save()
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         text="Alerts removed.",
     )
 
@@ -207,7 +207,7 @@ async def mute_handler(update: Update, context: CallbackContext) -> None:
     db_chat: DBChat = await DBChat.get(chat.id)
     db_chat.muted = True
     await db_chat.save()
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         text="Muted.",
     )
 
@@ -216,6 +216,6 @@ async def unmute_handler(update: Update, context: CallbackContext) -> None:
     db_chat: DBChat = await DBChat.get(chat.id)
     db_chat.muted = False
     await db_chat.save()
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         text="Unmuted.",
     )
