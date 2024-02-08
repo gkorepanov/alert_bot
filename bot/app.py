@@ -1,7 +1,4 @@
-"""THis module defines telegram bot application using builder pattern
-"""
 # general imports
-import asyncio
 import logging
 
 # telegram imports
@@ -13,9 +10,9 @@ from telegram.ext import (
 )
 
 # project imports
-from bot.config import config
-from bot.handlers import register_handlers
-from bot.database import init_database
+from .config import config
+from .handlers import register_handlers
+from .database import init_database
 
 # logger
 logger = logging.getLogger(__name__)

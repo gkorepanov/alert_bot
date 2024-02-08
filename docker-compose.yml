@@ -3,7 +3,7 @@ version: "3"
 services:
   mongo:
     image: mongo:7.0.5  # fix version to avoid compatibility issues and enforce caching
-    restart: always
+    restart: unless-stopped
     expose:
       - "27017"  # available to other containers
     ports:
@@ -15,7 +15,7 @@ services:
 
   bot:
     command: python3 run.py
-    restart: always
+    restart: unless-stopped
     build:
       context: "./"
     env_file:

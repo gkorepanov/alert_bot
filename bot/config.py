@@ -25,6 +25,5 @@ class Settings(BaseSettings):
     }
 
 
-
 # global config
 config = Settings()

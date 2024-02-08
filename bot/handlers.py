@@ -12,8 +12,8 @@ from telegram.ext import (
     filters,
 )
 
-from bot.database import DBChat, DBUser
-from bot.alert import alert_user
+from .database import DBChat, DBUser
+from .alert import alert_user
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ async def error_handler(update: Update, context: CallbackContext) -> None:
     logger.error(msg=f"Exception while handling an update:", exc_info=context.error)
 
 
-async def message_handler(update: Update, context: CallbackContext):
+async def message_handler(update: Update, context: CallbackContext) -> None:
     chat = update.effective_chat
     db_chat: DBChat = await DBChat.get(chat.id)
     if db_chat is None:
@@ -51,13 +51,16 @@ async def message_handler(update: Update, context: CallbackContext):
                 text=f"Alert triggered by regex {regex}",
             )
             for user_id in db_chat.alert_users:
-                db_user = await DBUser.get(user_id)
-                await alert_user(
-                    bot=context.bot,
-                    db_user=db_user,
-                    db_chat=db_chat,
-                    text=update.message.text,
-                )
+                try:
+                    db_user = await DBUser.get(user_id)
+                    await alert_user(
+                        bot=context.bot,
+                        db_user=db_user,
+                        db_chat=db_chat,
+                        text=update.message.text,
+                    )
+                except Exception as e:
+                    logger.exception(f"Error while alerting user {user_id}: {e}")
             break
     else:
         await update.message.reply_text(
@@ -65,7 +68,7 @@ async def message_handler(update: Update, context: CallbackContext):
         )
 
 
-async def added_to_chat_handler(update: Update, context: CallbackContext):
+async def added_to_chat_handler(update: Update, context: CallbackContext) -> None:
     if update.my_chat_member is None:
         return
     chat = update.my_chat_member.chat
@@ -103,7 +106,7 @@ async def added_to_chat_handler(update: Update, context: CallbackContext):
     )
 
 
-async def start_handler(update: Update, context: CallbackContext):
+async def start_handler(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
     if (await DBUser.get(user.id)) is None:
         db_user = DBUser(id=user.id, username=user.username)
@@ -122,7 +125,7 @@ async def start_handler(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML,
     )
 
-async def set_phone_number_handler(update: Update, context: CallbackContext):
+async def set_phone_number_handler(update: Update, context: CallbackContext) -> None:
     db_user: DBUser = await DBUser.get(update.effective_user.id)
 
     if not context.args:
@@ -147,7 +150,7 @@ async def set_phone_number_handler(update: Update, context: CallbackContext):
     )
 
 
-async def alert_me_handler(update: Update, context: CallbackContext):
+async def alert_me_handler(update: Update, context: CallbackContext) -> None:
     chat = update.effective_chat
     db_chat: DBChat = await DBChat.get(chat.id)
     db_user: DBUser = await DBUser.get(update.effective_user.id)
@@ -163,7 +166,7 @@ async def alert_me_handler(update: Update, context: CallbackContext):
     )
 
 
-async def add_alert_handler(update: Update, context: CallbackContext):
+async def add_alert_handler(update: Update, context: CallbackContext) -> None:
     chat = update.effective_chat
     db_chat: DBChat = await DBChat.get(chat.id)
     if not context.args:
@@ -181,7 +184,7 @@ async def add_alert_handler(update: Update, context: CallbackContext):
     )
 
 
-async def remove_alerts_handler(update: Update, context: CallbackContext):
+async def remove_alerts_handler(update: Update, context: CallbackContext) -> None:
     chat = update.effective_chat
     db_chat: DBChat = await DBChat.get(chat.id)
     db_chat.alerts.clear()
@@ -191,7 +194,7 @@ async def remove_alerts_handler(update: Update, context: CallbackContext):
     )
 
 
-async def mute_handler(update: Update, context: CallbackContext):
+async def mute_handler(update: Update, context: CallbackContext) -> None:
     chat = update.effective_chat
     db_chat: DBChat = await DBChat.get(chat.id)
     db_chat.muted = True
@@ -200,7 +203,7 @@ async def mute_handler(update: Update, context: CallbackContext):
         text="Muted.",
     )
 
-async def unmute_handler(update: Update, context: CallbackContext):
+async def unmute_handler(update: Update, context: CallbackContext) -> None:
     chat = update.effective_chat
     db_chat: DBChat = await DBChat.get(chat.id)
     db_chat.muted = False

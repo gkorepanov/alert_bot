@@ -14,7 +14,7 @@ from beanie import Document, init_beanie
 from pydantic import Field
 
 # project imports
-from bot.config import config
+from .config import config
 
 # logger
 logger = logging.getLogger(__name__)

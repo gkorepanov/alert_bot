@@ -1,7 +1,8 @@
+# general imports
 import logging
 
-from bot.app import get_ptb_application
-
+# project imports
+from .app import get_ptb_application
 
 
 if __name__ == "__main__":
