@@ -21,14 +21,15 @@ logger = logging.getLogger(__name__)
 
 def register_handlers(application: Application, user_filter: filters.BaseFilter):
     application.add_error_handler(error_handler)
+    chat_filter = filters.ChatType.GROUPS | filters.ChatType.CHANNEL
     application.add_handler(CommandHandler("start", start_handler, filters=user_filter & filters.ChatType.PRIVATE))
     application.add_handler(CommandHandler("set_phone_number", set_phone_number_handler, filters=user_filter & filters.ChatType.PRIVATE))
-    application.add_handler(CommandHandler("alert_me", alert_me_handler, filters=user_filter & filters.ChatType.GROUPS))
-    application.add_handler(CommandHandler("add_alert", add_alert_handler, filters=user_filter & filters.ChatType.GROUPS))
-    application.add_handler(CommandHandler("remove_alerts", remove_alerts_handler, filters=user_filter & filters.ChatType.GROUPS))
-    application.add_handler(CommandHandler("mute", mute_handler, filters=user_filter & filters.ChatType.GROUPS))
-    application.add_handler(CommandHandler("unmute", unmute_handler, filters=user_filter & filters.ChatType.GROUPS))
-    application.add_handler(MessageHandler(filters=filters.ChatType.GROUPS, callback=message_handler))
+    application.add_handler(CommandHandler("alert_me", alert_me_handler, filters=user_filter & chat_filter))
+    application.add_handler(CommandHandler("add_alert", add_alert_handler, filters=user_filter & chat_filter))
+    application.add_handler(CommandHandler("remove_alerts", remove_alerts_handler, filters=user_filter & chat_filter))
+    application.add_handler(CommandHandler("mute", mute_handler, filters=user_filter & chat_filter))
+    application.add_handler(CommandHandler("unmute", unmute_handler, filters=user_filter & chat_filter))
+    application.add_handler(MessageHandler(filters=chat_filter, callback=message_handler))
     application.add_handler(ChatMemberHandler(added_to_chat_handler))
 
 
@@ -62,10 +63,6 @@ async def message_handler(update: Update, context: CallbackContext) -> None:
                 except Exception as e:
                     logger.exception(f"Error while alerting user {user_id}: {e}")
             break
-    else:
-        await update.message.reply_text(
-            text="No alerts triggered.",
-        )
 
 
 async def added_to_chat_handler(update: Update, context: CallbackContext) -> None:
@@ -74,7 +71,7 @@ async def added_to_chat_handler(update: Update, context: CallbackContext) -> Non
     chat = update.my_chat_member.chat
     user = update.my_chat_member.from_user
 
-    if chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
+    if chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP, ChatType.CHANNEL):
         return
 
     new_status = update.my_chat_member.new_chat_member.status
@@ -111,7 +108,7 @@ async def start_handler(update: Update, context: CallbackContext) -> None:
     if (await DBUser.get(user.id)) is None:
         db_user = DBUser(id=user.id, username=user.username)
         await db_user.save()
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         text=(
             "Hello!\n"
             "I am a bot that will alert people when some message is sent to chats you add me to.\n"
@@ -129,7 +126,7 @@ async def set_phone_number_handler(update: Update, context: CallbackContext) -> 
     db_user: DBUser = await DBUser.get(update.effective_user.id)
 
     if not context.args:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             text="You have not provided phone number. Deleted your phone number. I will not call you anymore.",
         )
         db_user.phone_number = None
@@ -138,14 +135,14 @@ async def set_phone_number_handler(update: Update, context: CallbackContext) -> 
 
     phone_number = ''.join(context.args).replace(' ', '')
     if not phone_number.startswith('+79'):
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             text="Phone number should start with +79...",
         )
         return
 
     db_user.phone_number = phone_number
     await db_user.save()
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         text=f"Phone number set to {phone_number}.",
     )
 
@@ -153,15 +150,21 @@ async def set_phone_number_handler(update: Update, context: CallbackContext) -> 
 async def alert_me_handler(update: Update, context: CallbackContext) -> None:
     chat = update.effective_chat
     db_chat: DBChat = await DBChat.get(chat.id)
-    db_user: DBUser = await DBUser.get(update.effective_user.id)
+    if chat.type == ChatType.CHANNEL:
+        user_id = db_chat.adder_user_id
+    else:
+        user_id = update.effective_user.id
+
+    db_user: DBUser = await DBUser.get(user_id)
+
     if db_user is None:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             text="You are not registered in the database. Please start a private chat with me first.",
         )
         return
     db_chat.alert_users.add(db_user.id)
     await db_chat.save()
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         text="You are added to alert list for this chat.",
     )
 
