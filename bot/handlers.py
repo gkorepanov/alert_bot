@@ -183,7 +183,7 @@ async def add_alert_handler(update: Update, context: CallbackContext) -> None:
         )
         return
 
-    regex = ' '.join(context.args)
+    regex = ' '.join(args)
     db_chat.alerts.add(regex)
     await db_chat.save()
     await update.message.reply_text(
